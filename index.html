@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoveFinder - Boston Date Spots</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            background-color: #ffe6e6;
+            text-align: center;
+            color: #660000;
+        }
+        h1 {
+            font-size: 36px;
+            color: #cc0000;
+            margin-top: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px #888888;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+        select, input, button {
+            padding: 10px;
+            width: 100%;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #cc0000;
+            font-size: 16px;
+        }
+        button {
+            background-color: #cc0000;
+            color: white;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background-color: #990000;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .restaurant-card {
+            background: #ffcccc;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 5px #999;
+        }
+        #map-container {
+            width: 80%;
+            margin: 20px auto;
+            position: relative;
+        }
+        svg {
+            width: 100%;
+            height: 500px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            padding: 10px;
+            border: 1px solid black;
+            border-radius: 5px;
+            display: none;
+            pointer-events: none;
+        }
+        #side-panel {
+            position: fixed;
+            top: 50px;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0px 5px rgba(0,0,0,0.2);
+            padding: 15px;
+            overflow-y: auto;
+            transition: right 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>💕 LoveFinder: Best Date Spots in Boston 💕</h1>
+
+    <div class="container">
+        <h2>Filter Your Date Spot</h2>
+
+        <label for="cuisine">Cuisine:</label>
+        <select id="cuisine">
+            <option value="all">Any</option>
+            <option value="Italian">Italian</option>
+            <option value="American">American</option>
+            <option value="Indian">Indian</option>
+            <option value="Korean">Korean</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Thai">Thai</option>
+            <option value="French">French</option>
+            <option value="Vietnamese">Vietnamese</option>
+            <option value="Mexican">Mexican</option>
+            <option value="Seafood">Seafood</option>
+            <option value="Japanese">Japanese</option>
+        </select>
+
+        <label for="rating">Minimum Rating:</label>
+        <select id="rating">
+            <option value="all">Any</option>
+            <option value="3">3+ Stars</option>
+            <option value="4">4+ Stars</option>
+            <option value="4.5">4.5+ Stars</option>
+        </select>
+
+        <label for="neighborhood">Neighborhood:</label>
+        <select id="neighborhood">
+            <option value="all">Any</option>
+        </select>
+
+        <label for="review_count">Minimum Review Count:</label>
+        <input type="number" id="review_count" min="0" placeholder="Enter minimum reviews">
+
+        <button onclick="filterResults()">Find My Date Spot</button>
+    </div>
+
+    <div id="map-container">
+        <svg id="map"></svg>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <div id="side-panel"></div>
+
+    <script>
+        let dataset = [];
+        const width = 800, height = 500;
+        const svg = d3.select("#map")
+            .attr("width", width)
+            .attr("height", height);
+    
+        const projection = d3.geoMercator()
+            .center([-71.0589, 42.3601])
+            .scale(90000)
+            .translate([width / 2, height / 2]);
+    
+        const path = d3.geoPath().projection(projection);
+        const tooltip = d3.select("#tooltip");
+        const sidePanel = d3.select("#side-panel");
+    
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8])
+            .on("zoom", event => {
+                svg.selectAll("path").attr("transform", event.transform);
+                svg.selectAll("circle").attr("transform", event.transform);
+            });
+    
+        svg.call(zoom);
+    
+        d3.json("data/boston-neighborhoods.json").then(geojsonData => {
+            svg.selectAll("path")
+                .data(geojsonData.features)
+                .enter().append("path")
+                .attr("d", path)
+                .attr("fill", "#ffcccc")
+                .attr("stroke", "#cc0000")
+                .attr("stroke-width", 1);
+        });
+    
+        d3.csv("data/yelp_boston.csv").then(data => {
+            dataset = data.map(d => ({
+                name: d.name,
+                url: d.url,
+                rating: d.rating ? parseFloat(d.rating) : 0,
+                review_count: d.review_count ? parseInt(d.review_count) : 0,
+                snippet: d.snippet_text || "No review available.",
+                categories: parseCategories(d.categories_json),
+                neighborhood: d.neighborhood || "Unknown",
+                latitude: d.latitude ? parseFloat(d.latitude) : null,
+                longitude: d.longitude ? parseFloat(d.longitude) : null
+            }));
+    
+            console.log("Loaded Boston dataset:", dataset);
+            populateNeighborhoods();
+        });
+    
+        function parseCategories(categoryString) {
+            try {
+                let parsed = JSON.parse(categoryString.replace(/""/g, '"'));
+                return parsed.map(c => c[0]);
+            } catch (e) {
+                console.error("Error parsing categories:", categoryString, e);
+                return [];
+            }
+        }
+    
+        function populateNeighborhoods() {
+            let neighborhoodSelect = document.getElementById("neighborhood");
+            let neighborhoods = [...new Set(dataset.map(d => d.neighborhood).filter(n => n !== "Unknown"))].sort();
+    
+            neighborhoods.forEach(n => {
+                let option = document.createElement("option");
+                option.value = n;
+                option.textContent = n;
+                neighborhoodSelect.appendChild(option);
+            });
+        }
+    
+        // ✅ FIX: Define the missing filterResults function
+        function filterResults() {
+            if (dataset.length === 0) {
+                alert("Data is still loading. Please try again in a moment.");
+                return;
+            }
+    
+            let cuisine = document.getElementById("cuisine").value;
+            let rating = document.getElementById("rating").value;
+            let neighborhood = document.getElementById("neighborhood").value;
+            let minReviews = parseInt(document.getElementById("review_count").value) || 0;
+    
+            let filtered = dataset.filter(d =>
+                (cuisine === "all" || d.categories.includes(cuisine)) &&
+                (rating === "all" || d.rating >= parseFloat(rating)) &&
+                (neighborhood === "all" || d.neighborhood === neighborhood) &&
+                (d.review_count >= minReviews)
+            );
+    
+            updateMap(filtered);
+        }
+    
+        function updateMap(results) {
+            svg.selectAll("circle").remove();
+    
+            svg.selectAll("circle")
+                .data(results)
+                .enter().append("circle")
+                .attr("cx", d => projection([d.longitude, d.latitude])[0])
+                .attr("cy", d => projection([d.longitude, d.latitude])[1])
+                .attr("r", 5)
+                .attr("fill", "red")
+                .style("cursor", "pointer")
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .transition().duration(200)
+                        .attr("r", 10)
+                        .attr("fill", "orange");
+
+                    // ✅ Use .attr() to set tooltip content dynamically
+                    tooltip.style("display", "visible")
+                        .attr("data-name", d.name) // Store name
+                        .attr("data-rating", `${d.rating} ⭐`) // Store rating
+
+                        // Set tooltip position
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 20) + "px");
+                })
+                .on("mouseleave", function() {
+                    d3.select(this).attr("r", 5).attr("fill", "red");
+                    tooltip.style("display", "none");
+                })
+                .on("click", (event, d) => {
+                    sidePanel.style("right", "0px").html(`
+                        <button onclick="document.getElementById('side-panel').style.right='-300px'">Close</button>
+                        <h2><a href="${d.url}" target="_blank">${d.name}</a></h2>
+                        <p>${d.snippet}</p>
+                    `);
+                });
+        }
+    </script>
+    
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
