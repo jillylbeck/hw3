@@ -91,7 +91,7 @@
 </head>
 <body>
 
-    <h1>💕 LoveFinder: Best Date Spots in Boston 💕</h1>
+    <h1> Find the Best Date Night for You</h1>
 
     <div class="container">
         <h2>Filter Your Date Spot</h2>
@@ -163,7 +163,7 @@
     
         svg.call(zoom);
     
-        d3.json("data/boston-neighborhoods.json").then(geojsonData => {
+        d3.json("data/boston-neighborhoods.json").then(geojsonData => { //datasource: https://github.com/dj/boston/blob/master/data/boston-neighborhoods.json
             svg.selectAll("path")
                 .data(geojsonData.features)
                 .enter().append("path")
@@ -212,7 +212,7 @@
             });
         }
     
-        // ✅ FIX: Define the missing filterResults function
+        
         function filterResults() {
             if (dataset.length === 0) {
                 alert("Data is still loading. Please try again in a moment.");
@@ -251,12 +251,11 @@
                         .attr("r", 10)
                         .attr("fill", "orange");
 
-                    // ✅ Use .attr() to set tooltip content dynamically
                     tooltip.style("display", "visible")
                         .attr("data-name", d.name) // Store name
                         .attr("data-rating", `${d.rating} ⭐`) // Store rating
 
-                        // Set tooltip position
+                        //set tooltip position
                         .style("left", (event.pageX + 10) + "px")
                         .style("top", (event.pageY - 20) + "px");
                 })
@@ -277,6 +276,20 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
