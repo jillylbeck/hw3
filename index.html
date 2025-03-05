@@ -25,8 +25,9 @@
 
    .container {
      width: 80%;
-     max-width: 800px;
-     margin: 20px auto;
+     max-width: 500px;
+     margin-right: 40px;
+     margin-left: 30px;
      background: #ffffff;
      padding: 20px;
      border-radius: 12px;
@@ -63,10 +64,9 @@
      background-color: #ff577d;
    }
 
-
    #map-container {
      width: 80%;
-     margin: 20px auto;
+     margin-right: 50px;
      position: relative;
      max-width: 1000px;
    }
@@ -89,7 +89,6 @@
      font-size: 14px;
      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
    }
-
 
    #side-panel {
      position: fixed;
@@ -135,6 +134,10 @@
      border-top: 1px solid #ffbfcf;
    }
 
+   .site-container {
+    display: flex;
+    flex-direction: horizontal;
+   }
 
    #see-more-container {
      position: absolute;
@@ -162,7 +165,7 @@
 
  <h1>Find the Best Date Night for You</h1>
 
-
+<div class="site-container"> 
  <div class="container">
    <h2>Filter Your Date Spot</h2>
 
@@ -212,144 +215,141 @@
    <div class="tooltip" id="tooltip"></div>
  </div>
 
+</div>
 
  <div id="side-panel"></div>
 
 
  <script>
-   const pinSymbol = {
-     draw: function(context, size) {
-       const s = Math.sqrt(size);
-       context.moveTo(0, -s * 0.5);
-       context.bezierCurveTo(s * 0.3, -s * 0.5, s * 0.5, -s * 0.1, 0, s * 0.5);
-       context.bezierCurveTo(-s * 0.5, -s * 0.1, -s * 0.3, -s * 0.5, 0, -s * 0.5);
-     }
-   };
+
+    const pinSymbol = {
+        draw: function (context, size) {
+            const s = Math.sqrt(size) / 2; // Scale factor for size
+
+            // Draw the rounded top (circular head)
+            context.moveTo(0, -s * 1.2);
+            context.arc(0, -s * 0.8, s * 0.6, 0, Math.PI * 2); // Circular top
+
+            // Draw the pointed bottom (tail)
+            context.moveTo(-s * 0.4, -s * 0.4);
+            context.quadraticCurveTo(0, s * 1.2, s * 0.4, -s * 0.4); // Teardrop shape
+        }
+    };
 
 
-   let selectedPin = null;
-   let dataset = [];
-   const width = 800, height = 500;
+    
+    let selectedPin = null;
+    let dataset = [];
+    let validNeighborhoods = [];
+
+    function createPinPath(size) {
+    const s = Math.sqrt(size) / 2; // Scale for size
+    return `M 0,${-s * 1.2} 
+            Q ${s * 0.6},${-s * 0.8} ${s * 0.5},${-s * 0.3} 
+            Q ${s * 0.4},${s * 0.4} 0,${s * 1.2} 
+            Q ${-s * 0.4},${s * 0.4} ${-s * 0.5},${-s * 0.3} 
+            Q ${-s * 0.6},${-s * 0.8} 0,${-s * 1.2} 
+            Z`;
+}
+ 
+    const width = 800, height = 500;
+    const svg = d3.select("#map")
+        .attr("width", width)
+        .attr("height", height);
+ 
+    const projection = d3.geoMercator()
+        .center([-71.0565, 42.3555])
+        .scale(100000)
+        .translate([width / 2, height / 2]);
+ 
+    const path = d3.geoPath().projection(projection);
+    const tooltip = d3.select("#tooltip");
+    const sidePanel = d3.select("#side-panel");
+ 
+    const zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", event => {
+            svg.selectAll("path.map-shape").attr("transform", event.transform);
+            svg.selectAll("path.pin").attr("transform", function(d) {
+                const [x, y] = projection([d.longitude, d.latitude]);
+                const [tx, ty] = event.transform.apply([x, y]);
+                return `translate(${tx}, ${ty})`;
+            });
+        });
+ 
+    svg.call(zoom);
+ 
+    d3.json("data/boston-neighborhoods.json").then(geojsonData => {
+        svg.selectAll("path.map-shape")
+            .data(geojsonData.features)
+            .enter().append("path")
+            .attr("class", "map-shape")
+            .attr("d", path)
+            .attr("fill", "#ffcccc")
+            .attr("stroke", "#cc0000")
+            .attr("stroke-width", 1);
+ 
+        validNeighborhoods = geojsonData.features; // Store valid neighborhood boundaries
+    });
+ 
+    d3.csv("data/yelp_boston.csv").then(data => {
+        dataset = data.map(d => ({
+            name: d.name,
+            url: d.url,
+            rating: parseFloat(d.rating) || 0,
+            review_count: parseInt(d.review_count) || 0,
+            snippet: d.snippet_text || "No review available.",
+            categories: JSON.parse(d.categories_json.replace(/""/g, '"')).map(c => c[0]),
+            neighborhood: d.neighborhood || "Unknown",
+            latitude: parseFloat(d.latitude) || null,
+            longitude: parseFloat(d.longitude) || null
+        }));
+ 
+        // **Filtering restaurants that are inside Boston neighborhoods**
+        dataset = dataset.filter(d => {
+            if (!d.latitude || !d.longitude) return false;
+            return validNeighborhoods.some(n => d3.geoContains(n, [d.longitude, d.latitude]));
+        });
+ 
+        console.log("Filtered dataset:", dataset);
+        populateNeighborhoods();
+    });
+ 
+    function populateNeighborhoods() {
+        const neighborhoodSelect = document.getElementById("neighborhood");
+        const neighborhoods = [...new Set(
+            dataset.map(d => d.neighborhood).filter(n => n !== "Unknown")
+        )].sort();
+ 
+        neighborhoods.forEach(n => {
+            const option = document.createElement("option");
+            option.value = n;
+            option.textContent = n;
+            neighborhoodSelect.appendChild(option);
+        });
+    }
 
 
-   const svg = d3.select("#map")
-     .attr("width", width)
-     .attr("height", height);
-
-
-   /* Trying to tweak the center & scale for a more fully centered map view  (but not working well) */
-   const projection = d3.geoMercator()
-     .center([-71.0565, 42.3555])
-     .scale(100000)          
-     .translate([width / 2, height / 2]);
-
-
-   const path = d3.geoPath().projection(projection);
-   const tooltip = d3.select("#tooltip");
-   const sidePanel = d3.select("#side-panel");
-
-
-   const zoom = d3.zoom()
-     .scaleExtent([1, 8])
-     .on("zoom", event => {
-       svg.selectAll("path.map-shape").attr("transform", event.transform);
-       svg.selectAll("path.pin").attr("transform", function(d) {
-         const [x, y] = projection([d.longitude, d.latitude]);
-         const [tx, ty] = event.transform.apply([x, y]);
-         return `translate(${tx}, ${ty})`;
-       });
-     });
-   svg.call(zoom);
-
-
-   d3.json("data/boston-neighborhoods.json").then(geojsonData => {
-     svg.selectAll("path.map-shape")
-       .data(geojsonData.features)
-       .enter().append("path")
-       .attr("class", "map-shape")
-       .attr("d", path)
-       .attr("fill", "#ffcccc")
-       .attr("stroke", "#cc0000")
-       .attr("stroke-width", 1);
-   });
-
-
-   d3.csv("data/yelp_boston.csv").then(data => {
-     dataset = data.map(d => ({
-       name: d.name,
-       url: d.url,
-       rating: parseFloat(d.rating) || 0,
-       review_count: parseInt(d.review_count) || 0,
-       snippet: d.snippet_text || "No review available.",
-       categories: JSON.parse(d.categories_json.replace(/""/g, '"')).map(c => c[0]),
-       neighborhood: d.neighborhood || "Unknown",
-       latitude: parseFloat(d.latitude) || null,
-       longitude: parseFloat(d.longitude) || null
-     }));
-     populateNeighborhoods();
-   });
-
-
-   function populateNeighborhoods() {
-     const neighborhoodSelect = document.getElementById("neighborhood");
-     const neighborhoods = [...new Set(
-       dataset.map(d => d.neighborhood).filter(n => n !== "Unknown")
-     )].sort();
-
-
-     neighborhoods.forEach(n => {
-       const option = document.createElement("option");
-       option.value = n;
-       option.textContent = n;
-       neighborhoodSelect.appendChild(option);
-     });
-   }
-
-
-   function filterResults() {
-     selectedPin = null;
-     sidePanel.style("right", "-300px");
-
-
-     const cuisine = document.getElementById("cuisine").value;
-     const rating = document.getElementById("rating").value;
-     const neighborhood = document.getElementById("neighborhood").value;
-     const minReviews = parseInt(document.getElementById("review_count").value) || 0;
-
-
-     const filtered = dataset.filter(d =>
-       (cuisine === "all" || d.categories.includes(cuisine)) &&
-       (rating === "all" || d.rating >= parseFloat(rating)) &&
-       (neighborhood === "all" || d.neighborhood === neighborhood) &&
-       (d.review_count >= minReviews)
-     );
-
-
-     d3.select("#see-more-container").remove();
-
-
-     const initial = filtered.slice(0, 50);
-     updateMap(initial);
-
-
-     if (filtered.length > 50) {
-       const seeMoreContainer = d3.select("#map-container")
-         .append("div")
-         .attr("id", "see-more-container");
-
-
-       seeMoreContainer.append("button")
-         .attr("class", "see-more-btn")
-         .text(`Showing first 50 pins... See All (${filtered.length})?`)
-         .on("click", () => {
-           updateMap(filtered);
-           d3.select("#see-more-container").remove();
-         });
-     }
-   }
-
-
-   function updateMap(results) {
+ 
+    function filterResults() {
+        const cuisine = document.getElementById("cuisine").value;
+        const rating = document.getElementById("rating").value;
+        const neighborhood = document.getElementById("neighborhood").value;
+        const minReviews = parseInt(document.getElementById("review_count").value) || 0;
+        selectedPin = null;
+        sidePanel.style("right", "-300px");
+ 
+        const filtered = dataset.filter(d =>
+            (cuisine === "all" || d.categories.includes(cuisine)) &&
+            (rating === "all" || d.rating >= parseFloat(rating)) &&
+            (neighborhood === "all" || d.neighborhood === neighborhood) &&
+            (d.review_count >= minReviews)
+        );
+ 
+        updateMap(filtered);
+    }
+ 
+    function updateMap(results) {
      svg.selectAll("path.pin").remove();
 
 
@@ -359,7 +359,7 @@
        .attr("class", "pin")
        .attr("fill", "white")
        .attr("fill-opacity", 0.7)
-       .attr("d", d3.symbol().type(pinSymbol).size(800))
+       .attr("d", d => createPinPath(800))
        .attr("stroke", "#ff7b9c")
        .attr("transform", d => {
          const [x, y] = projection([d.longitude, d.latitude]);
@@ -373,7 +373,7 @@
          d3.select(this)
            .transition().duration(200)
            .attr("fill-opacity", 1)
-           .attr("d", d3.symbol().type(pinSymbol).size(1200))
+           .attr("d", d => createPinPath(800))
            .attr("fill", "#ff7b9c");
        }
 
@@ -392,9 +392,9 @@
      pins.on("mouseleave", function(event, d) {
        if (selectedPin !== d.name) {
          d3.select(this)
-           .transition().duration(200)
            .attr("fill-opacity", 0.7)
-           .attr("d", d3.symbol().type(pinSymbol).size(800))
+           .transition().duration(200)
+           .attr("d", d => createPinPath(800))
            .attr("stroke", "#ff7b9c")
            .attr("fill", "white");
        }
@@ -418,7 +418,6 @@
 
        selectedPin = d.name;
        d3.select(this)
-         .transition().duration(200)
          .attr("d", d3.symbol().type(pinSymbol).size(1000))
          .attr("fill", "#ff7b9c");
          
@@ -443,7 +442,7 @@
        .filter(d => d.name === selectedPin)
        .transition().duration(200)
        .attr("fill-opacity", 0.7)
-       .attr("d", d3.symbol().type(pinSymbol).size(800))
+       .attr("d", d => d3.symbol(pinSymbol).size(1000)())
        .attr("stroke", "#ff7b9c")
        .attr("fill", "white");
    }
@@ -454,6 +453,9 @@
      selectedPin = null;
      sidePanel.style("right", "-300px");
    }
+
+
  </script>
+ 
 </body>
 </html>
