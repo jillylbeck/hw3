@@ -11,7 +11,7 @@
      margin: 0;
      color: #3e3e3e;
      text-align: center;
-     background: linear-gradient(135deg, #ffe0e9 0%, #ffece3 100%);
+     background: #ffe0e9;
    }
 
 
@@ -30,8 +30,7 @@
      background: #ffffff;
      padding: 20px;
      border-radius: 12px;
-     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-   }x
+   }
    .container h2 {
      margin-bottom: 10px;
      color: #ff7b9c;
@@ -75,7 +74,7 @@
      width: 100%;
      height: 500px;
      border-radius: 12px;
-     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+     background-color: #fff;
    }
 
 
@@ -382,7 +381,7 @@
        tooltip.style("display", "block")
          .html(`
            <strong>${d.name}</strong><br>
-           ⭐ ${d.rating} Stars (${d.review_count} Reviews)<br>
+            ${d.rating} Stars (${d.review_count} Reviews)<br>
            <i>${d.categories.join(", ")}</i>
          `)
          .style("left", (event.pageX + 10) + "px")
@@ -429,10 +428,10 @@
          <button onclick="closeSidePanel()">Close</button>
          <h2><a href="${d.url}" target="_blank">${d.name}</a></h2>
          <hr>
-         <p><strong>⭐ Rating:</strong> ${d.rating} Stars</p>
-         <p><strong>📍 Neighborhood:</strong> ${d.neighborhood}</p>
-         <p><strong>🍽 Cuisine:</strong> ${d.categories.join(", ")}</p>
-         <p><strong>📝 Reviews:</strong> ${d.review_count} total</p>
+         <p><strong> Rating:</strong> ${d.rating} Stars</p>
+         <p><strong> Neighborhood:</strong> ${d.neighborhood}</p>
+         <p><strong> Cuisine:</strong> ${d.categories.join(", ")}</p>
+         <p><strong> Reviews:</strong> ${d.review_count} total</p>
          <p style="margin-top:10px; font-style:italic;">${d.snippet}</p>
        `);
      });
