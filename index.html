@@ -39,6 +39,7 @@
     }
     .container h2 {
       margin-bottom: 10px;
+      margin: 0 auto; 
       color: #ff7b9c;
       font-weight: 600;
     }
@@ -56,6 +57,7 @@
       border: 1px solid #ff7b9c;
       font-size: 15px;
       outline: none;
+      box-sizing: border-box; /* lining up all the filters to be uniform*/
     }
 
     input[type=number]::-webkit-inner-spin-button,
@@ -130,7 +132,8 @@
       font-weight: 400;
     }
     #map-controls label input {
-      margin-right: 5px;
+        width: 16px;
+        margin-right: 5px;
     }
 
     .tooltip {
@@ -535,7 +538,7 @@
           .style("left", (event.pageX + 5) + "px")
           .style("top", (event.pageY + 5) + "px");
 
-        d3.select(this).append("text")
+        let textElement = d3.select(this).append("text")
           .attr("class", "hover-label")
           .attr("x", 5)
           .attr("y", -5)
@@ -544,6 +547,22 @@
           .style("fill", "#3e3e3e")
           .style("font-weight", "600")
           .style("pointer-events", "none");
+
+        
+        let box = textElement.node().getBBox(); //need the size of the text for background label
+
+        //making white background behind restaurant name labelss
+        d3.select(this).insert("rect", "text.hover-label")
+            .attr("class", "hover-label-bg")
+            .attr("x", box.x - 5)
+            .attr("y", box.y - 3)
+            .attr("width", box.width + 10)
+            .attr("height", box.height + 6)
+            .attr("fill", "white")
+            .attr("stroke", "#ff7b9c")
+            .attr("rx", 4)
+            .style("pointer-events", "none");
+
       });
 
       groups.on("mouseleave", function(event, d) {
@@ -557,6 +576,7 @@
         }
         tooltip.style("display", "none");
         d3.select(this).selectAll("text.hover-label").remove();
+        d3.select(this).selectAll("rect.hover-label-bg").remove();
       });
 
       groups.on("click", function(event, d) {
