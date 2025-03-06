@@ -1,461 +1,609 @@
-<meta charset="UTF-8" />
- <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
- <title>LoveFinder - Boston Date Spots</title>
- <script src="https://d3js.org/d3.v7.min.js"></script>
- <style>
-   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LoveFinder - Boston Date Spots</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
+    body {
+      font-family: "Poppins", "Helvetica Neue", sans-serif;
+      margin: 0;
+      color: #3e3e3e;
+      text-align: center;
+      background: #ffe0e9;
+    }
 
-   body {
-     font-family: "Poppins", "Helvetica Neue", sans-serif;
-     margin: 0;
-     color: #3e3e3e;
-     text-align: center;
-     background: #ffe0e9;
-   }
+    h1 {
+      font-size: 36px;
+      color: #ff7b9c;
+      margin: 20px 0 10px 0;
+      font-weight: 600;
+    }
 
+    .site-container {
+      display: flex;
+      flex-direction: horizontal;
+    }
 
-   h1 {
-     font-size: 36px;
-     color: #ff7b9c;
-     margin: 20px 0 10px 0;
-     font-weight: 600;
-   }
+    .container {
+      width: 80%;
+      max-width: 500px;
+      margin-right: 40px;
+      margin-left: 30px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .container h2 {
+      margin-bottom: 10px;
+      color: #ff7b9c;
+      font-weight: 600;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 10px;
+      text-align: left;
+    }
+    select, input, button {
+      padding: 10px;
+      width: 100%;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ff7b9c;
+      font-size: 15px;
+      outline: none;
+    }
 
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    button {
+      background-color: #ff7b9c;
+      color: white;
+      cursor: pointer;
+      margin-top: 15px;
+      font-weight: 500;
+      border: none;
+    }
+    button:hover {
+      background-color: #ff577d;
+    }
 
-   .container {
-     width: 80%;
-     max-width: 500px;
-     margin-right: 40px;
-     margin-left: 30px;
-     background: #ffffff;
-     padding: 20px;
-     border-radius: 12px;
-   }
-   .container h2 {
-     margin-bottom: 10px;
-     color: #ff7b9c;
-     font-weight: 600;
-   }
-   label {
-     font-weight: 600;
-     display: block;
-     margin-top: 10px;
-     text-align: left;
-   }
-   select, input, button {
-     padding: 10px;
-     width: 100%;
-     margin-top: 5px;
-     border-radius: 6px;
-     border: 1px solid #ff7b9c;
-     font-size: 15px;
-     outline: none;
-   }
-   button {
-     background-color: #ff7b9c;
-     color: white;
-     cursor: pointer;
-     margin-top: 15px;
-     font-weight: 500;
-     border: none;
-   }
-   button:hover {
-     background-color: #ff577d;
-   }
+    #map-container {
+      width: 80%;
+      margin-right: 50px;
+      position: relative;
+      max-width: 1000px;
+    }
+    svg {
+      width: 100%;
+      height: 500px;
+      border-radius: 12px;
+      background-color: #fff;
+    }
 
-   #map-container {
-     width: 80%;
-     margin-right: 50px;
-     position: relative;
-     max-width: 1000px;
-   }
-   svg {
-     width: 100%;
-     height: 500px;
-     border-radius: 12px;
-     background-color: #fff;
-   }
+    #boston-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: #fff0f4;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #ff7b9c;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      z-index: 9999;
+    }
 
+    #map-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #fff0f4;
+      padding: 8px 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      z-index: 9999; 
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+    #map-controls h3 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      color: #ff7b9c;
+      font-weight: 600;
+    }
+    #map-controls label {
+      display: inline-flex;
+      align-items: center;
+      margin: 4px 0;
+      font-size: 14px;
+      color: #333;
+      font-weight: 400;
+    }
+    #map-controls label input {
+      margin-right: 5px;
+    }
 
-   .tooltip {
-     position: absolute;
-     background-color: #fff;
-     padding: 10px;
-     border: 1px solid #ff7b9c;
-     border-radius: 6px;
-     display: none;
-     pointer-events: none;
-     font-size: 14px;
-     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-   }
+    .tooltip {
+      position: absolute;
+      background-color: #fff;
+      padding: 10px;
+      border: 1px solid #ff7b9c;
+      border-radius: 6px;
+      display: none;
+      pointer-events: none;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      z-index: 99999;
+    }
 
-   #side-panel {
-     position: fixed;
-     top: 50px;
-     right: -300px;
-     width: 300px;
-     height: 100%;
-     background: #fff;
-     box-shadow: -2px 0px 6px rgba(0,0,0,0.1);
-     padding: 15px;
-     overflow-y: auto;
-     transition: right 0.3s ease-in-out;
-     border-left: 1px solid #ffbfcf;
-   }
-   #side-panel button {
-     background-color: #ff7b9c;
-     color: white;
-     border: none;
-     border-radius: 6px;
-     padding: 8px;
-     cursor: pointer;
-     margin-bottom: 10px;
-     font-family: inherit;
-   }
-   #side-panel button:hover {
-     background-color: #ff577d;
-   }
-   #side-panel h2 a {
-     color: #ff7b9c;
-     text-decoration: underline;
-   }
-   #side-panel h2 a:hover {
-     color: #ff577d;
-     text-decoration: none;
-   }
-   #side-panel p {
-     line-height: 1.4;
-     margin: 8px 0;
-   }
-   #side-panel hr {
-     margin: 10px 0;
-     border: none;
-     border-top: 1px solid #ffbfcf;
-   }
+    #side-panel {
+      position: fixed;
+      top: 50px;
+      right: -300px;
+      width: 300px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -2px 0px 6px rgba(0,0,0,0.1);
+      padding: 15px;
+      overflow-y: auto;
+      transition: right 0.3s ease-in-out;
+      border-left: 1px solid #ffbfcf;
+      z-index: 100000;
+    }
+    #side-panel button {
+      background-color: #ff7b9c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+    #side-panel button:hover {
+      background-color: #ff577d;
+    }
+    #side-panel h2 a {
+      color: #ff7b9c;
+      text-decoration: underline;
+    }
+    #side-panel h2 a:hover {
+      color: #ff577d;
+      text-decoration: none;
+    }
+    #side-panel p {
+      line-height: 1.4;
+      margin: 8px 0;
+    }
+    #side-panel hr {
+      margin: 10px 0;
+      border: none;
+      border-top: 1px solid #ffbfcf;
+    }
 
-   .site-container {
-    display: flex;
-    flex-direction: horizontal;
-   }
+    #load-all-container {
+      margin-top: 8px;
+      display: none; 
+    }
+    button.see-more-btn {
+      font-size: 14px;
+      padding: 6px;
+      background-color: #ff7b9c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      width: 100%;
+      text-align: center;
+    }
+    button.see-more-btn:hover {
+      background-color: #ff577d;
+    }
 
-   #see-more-container {
-     position: absolute;
-     top: 10px;
-     left: 10px;
-     z-index: 999;
-   }
-   button.see-more-btn {
-     font-size: 14px;
-     padding: 6px;
-     background-color: #ff7b9c;
-     color: white;
-     border: none;
-     border-radius: 6px;
-     font-family: inherit;
-     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-   }
-   button.see-more-btn:hover {
-     background-color: #ff577d;
-   }
- </style>
+    .neighborhood-label {
+      fill: #444;
+      font-size: 10px;
+      font-weight: 400;
+      pointer-events: none;
+      text-anchor: middle;
+      display: none;
+    }
+    .landmark-group {
+      display: none;
+    }
+    .landmark-group text {
+      font-size: 9px;
+      fill: #333;
+    }
+  </style>
 </head>
 <body>
 
+  <h1>Find the Best Date Night for You</h1>
 
- <h1>Find the Best Date Night for You</h1>
+  <div class="site-container"> 
+    <div class="container">
+      <h2>Filter Your Date Spot</h2>
 
-<div class="site-container"> 
- <div class="container">
-   <h2>Filter Your Date Spot</h2>
+      <label for="cuisine">Cuisine:</label>
+      <select id="cuisine">
+        <option value="all">Any</option>
+        <option value="Italian">Italian</option>
+        <option value="Indian">Indian</option>
+        <option value="Korean">Korean</option>
+        <option value="Chinese">Chinese</option>
+        <option value="Thai">Thai</option>
+        <option value="American">American</option>
+        <option value="French">French</option>
+        <option value="Vietnamese">Vietnamese</option>
+        <option value="Mexican">Mexican</option>
+        <option value="Seafood">Seafood</option>
+        <option value="Japanese">Japanese</option>
+      </select>
 
+      <label for="rating">Minimum Rating:</label>
+      <select id="rating">
+        <option value="all">Any</option>
+        <option value="3">3+ Stars</option>
+        <option value="4">4+ Stars</option>
+        <option value="4.5">4.5+ Stars</option>
+      </select>
 
-   <label for="cuisine">Cuisine:</label>
-   <select id="cuisine">
-     <option value="all">Any</option>
-     <option value="Italian">Italian</option>
-     <option value="Indian">Indian</option>
-     <option value="Korean">Korean</option>
-     <option value="Chinese">Chinese</option>
-     <option value="Thai">Thai</option>
-     <option value="American">American</option>
-     <option value="French">French</option>
-     <option value="Vietnamese">Vietnamese</option>
-     <option value="Mexican">Mexican</option>
-     <option value="Seafood">Seafood</option>
-     <option value="Japanese">Japanese</option>
-   </select>
+      <label for="neighborhood">Neighborhood:</label>
+      <select id="neighborhood">
+        <option value="all">Any</option>
+      </select>
 
+      <label for="review_count">Minimum Review Count:</label>
+      <input type="number" id="review_count" min="0" placeholder="Enter minimum reviews"/>
 
-   <label for="rating">Minimum Rating:</label>
-   <select id="rating">
-     <option value="all">Any</option>
-     <option value="3">3+ Stars</option>
-     <option value="4">4+ Stars</option>
-     <option value="4.5">4.5+ Stars</option>
-   </select>
+      <button onclick="filterResults()">Find My Date Spot</button>
+    </div>
 
+    <div id="map-container">
+      <div id="boston-label">Map of Boston</div>
 
-   <label for="neighborhood">Neighborhood:</label>
-   <select id="neighborhood">
-     <option value="all">Any</option>
-   </select>
+      <div id="map-controls">
+        <h3>Map Controls</h3>
 
+        <label>
+          <input type="checkbox" id="toggle-landmarks" />
+          Show Key Landmarks
+        </label>
 
-   <label for="review_count">Minimum Review Count:</label>
-   <input type="number" id="review_count" min="0" placeholder="Enter minimum reviews"/>
+        <label>
+          <input type="checkbox" id="toggle-labels" />
+          Show Neighborhoods
+        </label>
 
+        <div id="load-all-container">
+          <button class="see-more-btn" id="load-all-btn"></button>
+        </div>
+      </div>
 
-   <button onclick="filterResults()">Find My Date Spot</button>
- </div>
+      <svg id="map"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+  </div>
 
+  <div id="side-panel"></div>
 
- <div id="map-container">
-   <svg id="map"></svg>
-   <div class="tooltip" id="tooltip"></div>
- </div>
+  <script>
 
-</div>
+    function createPinPath(size) {
+      const s = Math.sqrt(size) / 2; 
+      return `M 0,${-s * 1.2} 
+              Q ${s * 0.6},${-s * 0.8} ${s * 0.5},${-s * 0.3} 
+              Q ${s * 0.4},${s * 0.4} 0,${s * 1.2} 
+              Q ${-s * 0.4},${s * 0.4} ${-s * 0.5},${-s * 0.3} 
+              Q ${-s * 0.6},${-s * 0.8} 0,${-s * 1.2} 
+              Z`;
+    }
 
- <div id="side-panel"></div>
-
-
- <script>
-
-    const pinSymbol = {
-        draw: function (context, size) {
-            const s = Math.sqrt(size) / 2; // Scale factor for size
-
-            // Draw the rounded top (circular head)
-            context.moveTo(0, -s * 1.2);
-            context.arc(0, -s * 0.8, s * 0.6, 0, Math.PI * 2); // Circular top
-
-            // Draw the pointed bottom (tail)
-            context.moveTo(-s * 0.4, -s * 0.4);
-            context.quadraticCurveTo(0, s * 1.2, s * 0.4, -s * 0.4); // Teardrop shape
-        }
-    };
-
-
-    
-    let selectedPin = null;
+    let selectedPin = null;  
     let dataset = [];
     let validNeighborhoods = [];
 
-    function createPinPath(size) {
-    const s = Math.sqrt(size) / 2; // Scale for size
-    return `M 0,${-s * 1.2} 
-            Q ${s * 0.6},${-s * 0.8} ${s * 0.5},${-s * 0.3} 
-            Q ${s * 0.4},${s * 0.4} 0,${s * 1.2} 
-            Q ${-s * 0.4},${s * 0.4} ${-s * 0.5},${-s * 0.3} 
-            Q ${-s * 0.6},${-s * 0.8} 0,${-s * 1.2} 
-            Z`;
-}
- 
+    let labelsVisible = false;     
+    let landmarksVisible = false;  
+
+    let neighborhoodLabels;
+    let landmarkGroups; 
+
     const width = 800, height = 500;
     const svg = d3.select("#map")
-        .attr("width", width)
-        .attr("height", height);
- 
+      .attr("width", width)
+      .attr("height", height);
+
     const projection = d3.geoMercator()
-        .center([-71.0565, 42.3555])
-        .scale(100000)
-        .translate([width / 2, height / 2]);
- 
+      .center([-71.0565, 42.3555])
+      .scale(100000)
+      .translate([width / 2, height / 2]);
+
     const path = d3.geoPath().projection(projection);
     const tooltip = d3.select("#tooltip");
     const sidePanel = d3.select("#side-panel");
- 
+
     const zoom = d3.zoom()
-        .scaleExtent([1, 8])
-        .on("zoom", event => {
-            svg.selectAll("path.map-shape").attr("transform", event.transform);
-            svg.selectAll("path.pin").attr("transform", function(d) {
-                const [x, y] = projection([d.longitude, d.latitude]);
-                const [tx, ty] = event.transform.apply([x, y]);
-                return `translate(${tx}, ${ty})`;
-            });
+      .scaleExtent([1, 16])
+      .on("zoom", event => {
+        svg.selectAll("path.map-shape").attr("transform", event.transform);
+
+        svg.selectAll("g.pin-group").attr("transform", d => {
+          const [x, y] = projection([d.longitude, d.latitude]);
+          const [tx, ty] = event.transform.apply([x, y]);
+          return `translate(${tx}, ${ty})`;
         });
- 
+
+        if (landmarkGroups) {
+          landmarkGroups.attr("transform", d => {
+            const [lx, ly] = projection([d.longitude, d.latitude]);
+            const [tx, ty] = event.transform.apply([lx, ly]);
+            return `translate(${tx}, ${ty})`;
+          });
+        }
+
+        if (neighborhoodLabels) {
+          neighborhoodLabels.attr("transform", d => {
+            const [cx, cy] = path.centroid(d);
+            const [tx, ty] = event.transform.apply([cx, cy]);
+            return `translate(${tx}, ${ty})`;
+          });
+        }
+      });
     svg.call(zoom);
- 
+
     d3.json("data/boston-neighborhoods.json").then(geojsonData => {
-        svg.selectAll("path.map-shape")
-            .data(geojsonData.features)
-            .enter().append("path")
-            .attr("class", "map-shape")
-            .attr("d", path)
-            .attr("fill", "#ffcccc")
-            .attr("stroke", "#cc0000")
-            .attr("stroke-width", 1);
- 
-        validNeighborhoods = geojsonData.features; // Store valid neighborhood boundaries
-    });
- 
-    d3.csv("data/yelp_boston.csv").then(data => {
+      svg.selectAll("path.map-shape")
+        .data(geojsonData.features)
+        .enter()
+        .append("path")
+        .attr("class", "map-shape")
+        .attr("d", path)
+        .attr("fill", "#ffcccc")
+        .attr("stroke", "#cc0000")
+        .attr("stroke-width", 1);
+
+      validNeighborhoods = geojsonData.features;
+
+      neighborhoodLabels = svg.selectAll("text.neighborhood-label")
+        .data(geojsonData.features)
+        .enter()
+        .append("text")
+        .attr("class", "neighborhood-label")
+        .attr("transform", d => {
+          const [cx, cy] = path.centroid(d);
+          return `translate(${cx}, ${cy})`;
+        })
+        .text(d => d.properties.Name || d.properties.NAME || d.properties.name || "Unknown");
+
+      const landmarks = [
+        { name: "Faneuil Hall", latitude: 42.3600, longitude: -71.0568 },
+        { name: "Fenway Park", latitude: 42.3467, longitude: -71.0972 },
+        { name: "Boston Common", latitude: 42.3550, longitude: -71.0656 },
+        { name: "Castle Island", latitude: 42.3395, longitude: -71.0109 },
+        { name: "Arnold Arboretum", latitude: 42.3076, longitude: -71.1208 },
+        { name: "Franklin Park", latitude: 42.3024, longitude: -71.0910 },
+        { name: "George Wright Golf Course", latitude: 42.2591, longitude: -71.1253 }
+      ];
+
+      landmarkGroups = svg.selectAll("g.landmark-group")
+        .data(landmarks)
+        .enter()
+        .append("g")
+        .attr("class", "landmark-group")
+        .attr("transform", d => {
+          const [lx, ly] = projection([d.longitude, d.latitude]);
+          return `translate(${lx}, ${ly})`;
+        });
+
+      landmarkGroups.append("circle")
+        .attr("r", 4)
+        .attr("fill", "#FF0000");
+
+      landmarkGroups.append("text")
+        .text(d => d.name)
+        .attr("x", 6)
+        .attr("y", 3);
+
+      d3.csv("data/yelp_boston.csv").then(data => {
         dataset = data.map(d => ({
-            name: d.name,
-            url: d.url,
-            rating: parseFloat(d.rating) || 0,
-            review_count: parseInt(d.review_count) || 0,
-            snippet: d.snippet_text || "No review available.",
-            categories: JSON.parse(d.categories_json.replace(/""/g, '"')).map(c => c[0]),
-            neighborhood: d.neighborhood || "Unknown",
-            latitude: parseFloat(d.latitude) || null,
-            longitude: parseFloat(d.longitude) || null
+          name: d.name,
+          url: d.url,
+          rating: parseFloat(d.rating) || 0,
+          review_count: parseInt(d.review_count) || 0,
+          snippet: d.snippet_text || "No review available.",
+          categories: JSON.parse(d.categories_json.replace(/""/g, '"')).map(c => c[0]),
+          neighborhood: d.neighborhood || "Unknown",
+          latitude: parseFloat(d.latitude) || null,
+          longitude: parseFloat(d.longitude) || null
         }));
- 
-        // **Filtering restaurants that are inside Boston neighborhoods**
+
         dataset = dataset.filter(d => {
-            if (!d.latitude || !d.longitude) return false;
-            return validNeighborhoods.some(n => d3.geoContains(n, [d.longitude, d.latitude]));
+          if (!d.latitude || !d.longitude) return false;
+          return validNeighborhoods.some(n => d3.geoContains(n, [d.longitude, d.latitude]));
         });
- 
-        console.log("Filtered dataset:", dataset);
+
         populateNeighborhoods();
+      });
     });
- 
+
     function populateNeighborhoods() {
-        const neighborhoodSelect = document.getElementById("neighborhood");
-        const neighborhoods = [...new Set(
-            dataset.map(d => d.neighborhood).filter(n => n !== "Unknown")
-        )].sort();
- 
-        neighborhoods.forEach(n => {
-            const option = document.createElement("option");
-            option.value = n;
-            option.textContent = n;
-            neighborhoodSelect.appendChild(option);
-        });
+      const neighborhoodSelect = document.getElementById("neighborhood");
+      const neighborhoods = [...new Set(
+        dataset.map(d => d.neighborhood).filter(n => n !== "Unknown")
+      )].sort();
+
+      neighborhoods.forEach(n => {
+        const option = document.createElement("option");
+        option.value = n;
+        option.textContent = n;
+        neighborhoodSelect.appendChild(option);
+      });
     }
 
+    document.getElementById("toggle-landmarks").addEventListener("change", function() {
+      landmarksVisible = this.checked;
+      landmarkGroups.style("display", landmarksVisible ? "block" : "none");
+    });
 
- 
+    document.getElementById("toggle-labels").addEventListener("change", function() {
+      labelsVisible = this.checked;
+      neighborhoodLabels.style("display", labelsVisible ? "block" : "none");
+    });
+
     function filterResults() {
-        const cuisine = document.getElementById("cuisine").value;
-        const rating = document.getElementById("rating").value;
-        const neighborhood = document.getElementById("neighborhood").value;
-        const minReviews = parseInt(document.getElementById("review_count").value) || 0;
-        selectedPin = null;
-        sidePanel.style("right", "-300px");
- 
-        const filtered = dataset.filter(d =>
-            (cuisine === "all" || d.categories.includes(cuisine)) &&
-            (rating === "all" || d.rating >= parseFloat(rating)) &&
-            (neighborhood === "all" || d.neighborhood === neighborhood) &&
-            (d.review_count >= minReviews)
-        );
- 
-        updateMap(filtered);
+      svg.call(zoom.transform, d3.zoomIdentity);
+      selectedPin = null;
+      sidePanel.style("right", "-300px");
+
+      const cuisine = document.getElementById("cuisine").value;
+      const rating = document.getElementById("rating").value;
+      const neighborhood = document.getElementById("neighborhood").value;
+      const minReviews = parseInt(document.getElementById("review_count").value) || 0;
+
+      const filtered = dataset.filter(d =>
+        (cuisine === "all" || d.categories.includes(cuisine)) &&
+        (rating === "all" || d.rating >= parseFloat(rating)) &&
+        (neighborhood === "all" || d.neighborhood === neighborhood) &&
+        (d.review_count >= minReviews)
+      );
+
+      const loadAllContainer = document.getElementById("load-all-container");
+      const loadAllBtn = document.getElementById("load-all-btn");
+      loadAllContainer.style.display = "none"; 
+
+      const initial = filtered.slice(0, 50);
+      updateMap(initial);
+
+      if (filtered.length > 50) {
+        loadAllContainer.style.display = "block";
+        loadAllBtn.textContent = `Load All (${filtered.length})`;
+        loadAllBtn.onclick = () => {
+          updateMap(filtered);
+          loadAllContainer.style.display = "none";
+        };
+      }
     }
- 
+
     function updateMap(results) {
-     svg.selectAll("path.pin").remove();
+      svg.selectAll("g.pin-group").remove();
 
+      const groups = svg.selectAll("g.pin-group")
+        .data(results, d => d.name)
+        .enter()
+        .append("g")
+        .attr("class", "pin-group")
+        .attr("transform", d => {
+          const [x, y] = projection([d.longitude, d.latitude]);
+          return `translate(${x}, ${y})`;
+        })
+        .style("cursor", "pointer");
 
-     const pins = svg.selectAll("path.pin")
-       .data(results, d => d.name)
-       .enter().append("path")
-       .attr("class", "pin")
-       .attr("fill", "white")
-       .attr("fill-opacity", 0.7)
-       .attr("d", d => createPinPath(800))
-       .attr("stroke", "#ff7b9c")
-       .attr("transform", d => {
-         const [x, y] = projection([d.longitude, d.latitude]);
-         return `translate(${x}, ${y})`;
-       })
-       .style("cursor", "pointer");
+      groups.append("path")
+        .attr("class", "pin")
+        .attr("d", createPinPath(800))
+        .attr("fill", "white")
+        .attr("fill-opacity", 0.7)
+        .attr("stroke", "#ff7b9c");
 
-
-     pins.on("mouseover", function(event, d) {
-       if (selectedPin !== d.name) {
-         d3.select(this)
-           .transition().duration(200)
-           .attr("fill-opacity", 1)
-           .attr("d", d => createPinPath(800))
-           .attr("fill", "#ff7b9c");
-       }
-
-
-       tooltip.style("display", "block")
-         .html(`
-           <strong>${d.name}</strong><br>
+      groups.on("mouseover", function(event, d) {
+        if (selectedPin !== d.name) {
+          d3.select(this).select("path.pin")
+            .transition().duration(200)
+            .attr("fill", "#ff7b9c")
+            .attr("fill-opacity", 1)
+            .attr("d", createPinPath(800));
+        }
+        tooltip.style("display", "block")
+          .html(`
+            <strong>${d.name}</strong><br>
             ${d.rating} Stars (${d.review_count} Reviews)<br>
-           <i>${d.categories.join(", ")}</i>
-         `)
-         .style("left", (event.pageX + 10) + "px")
-         .style("top", (event.pageY - 20) + "px");
-     });
+            <i>${d.categories.join(", ")}</i>
+          `)
+          .style("left", (event.pageX + 5) + "px")
+          .style("top", (event.pageY + 5) + "px");
 
+        d3.select(this).append("text")
+          .attr("class", "hover-label")
+          .attr("x", 5)
+          .attr("y", -5)
+          .text(d.name)
+          .style("font-size", "12px")
+          .style("fill", "#3e3e3e")
+          .style("font-weight", "600")
+          .style("pointer-events", "none");
+      });
 
-     pins.on("mouseleave", function(event, d) {
-       if (selectedPin !== d.name) {
-         d3.select(this)
-           .attr("fill-opacity", 0.7)
-           .transition().duration(200)
-           .attr("d", d => createPinPath(800))
-           .attr("stroke", "#ff7b9c")
-           .attr("fill", "white");
-       }
-       tooltip.style("display", "none");
-     });
+      groups.on("mouseleave", function(event, d) {
+        if (selectedPin !== d.name) {
+          d3.select(this).select("path.pin")
+            .transition().duration(200)
+            .attr("fill", "white")
+            .attr("fill-opacity", 0.7)
+            .attr("d", createPinPath(800))
+            .attr("stroke", "#ff7b9c");
+        }
+        tooltip.style("display", "none");
+        d3.select(this).selectAll("text.hover-label").remove();
+      });
 
+      groups.on("click", function(event, d) {
+        if (selectedPin === d.name) {
+          revertSelectedPin();
+          sidePanel.style("right", "-300px");
+          selectedPin = null;
+          return;
+        }
+        if (selectedPin) {
+          revertSelectedPin();
+        }
+        selectedPin = d.name;
+        d3.select(this).select("path.pin")
+          .transition().duration(200)
+          .attr("d", createPinPath(1200))
+          .attr("fill", "#ff7b9c");
 
-     pins.on("click", function(event, d) {
-       if (selectedPin === d.name) {
-         revertSelectedPin();
-         sidePanel.style("right", "-300px");
-         selectedPin = null;
-         return;
-       }
+        sidePanel.style("right", "0px").html(`
+          <button onclick="closeSidePanel()">Close</button>
+          <h2><a href="${d.url}" target="_blank">${d.name}</a></h2>
+          <hr>
+          <p><strong> Rating:</strong> ${d.rating} Stars</p>
+          <p><strong> Neighborhood:</strong> ${d.neighborhood}</p>
+          <p><strong> Cuisine:</strong> ${d.categories.join(", ")}</p>
+          <p><strong> Reviews:</strong> ${d.review_count} total</p>
+          <p style="margin-top:10px; font-style:italic;">${d.snippet}</p>
+        `);
+      });
+    }
 
+    function revertSelectedPin() {
+      svg.selectAll("g.pin-group")
+        .filter(d => d.name === selectedPin)
+        .transition().duration(200)
+        .select("path.pin")
+        .attr("fill-opacity", 0.7)
+        .attr("d", createPinPath(800))
+        .attr("stroke", "#ff7b9c")
+        .attr("fill", "white");
+    }
 
-       if (selectedPin) {
-         revertSelectedPin();
-       }
-
-
-       selectedPin = d.name;
-       d3.select(this)
-         .attr("d", d3.symbol().type(pinSymbol).size(1000))
-         .attr("fill", "#ff7b9c");
-         
-
-
-       sidePanel.style("right", "0px").html(`
-         <button onclick="closeSidePanel()">Close</button>
-         <h2><a href="${d.url}" target="_blank">${d.name}</a></h2>
-         <hr>
-         <p><strong> Rating:</strong> ${d.rating} Stars</p>
-         <p><strong> Neighborhood:</strong> ${d.neighborhood}</p>
-         <p><strong> Cuisine:</strong> ${d.categories.join(", ")}</p>
-         <p><strong> Reviews:</strong> ${d.review_count} total</p>
-         <p style="margin-top:10px; font-style:italic;">${d.snippet}</p>
-       `);
-     });
-   }
-
-
-   function revertSelectedPin() {
-     svg.selectAll("path.pin")
-       .filter(d => d.name === selectedPin)
-       .transition().duration(200)
-       .attr("fill-opacity", 0.7)
-       .attr("d", d => d3.symbol(pinSymbol).size(1000)())
-       .attr("stroke", "#ff7b9c")
-       .attr("fill", "white");
-   }
-
-
-   function closeSidePanel() {
-     revertSelectedPin();
-     selectedPin = null;
-     sidePanel.style("right", "-300px");
-   }
-
-
- </script>
- 
+    function closeSidePanel() {
+      revertSelectedPin();
+      selectedPin = null;
+      sidePanel.style("right", "-300px");
+    }
+  </script>
 </body>
 </html>
