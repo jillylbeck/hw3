@@ -111,7 +111,7 @@
       padding: 8px 10px;
       border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      z-index: 9999; 
+      z-index: 9000; 
       display: inline-flex;
       flex-direction: column;
       align-items: flex-start;
@@ -146,13 +146,13 @@
       pointer-events: none;
       font-size: 14px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      z-index: 99999;
+      z-index: 100000;
     }
 
     #side-panel {
       position: fixed;
       top: 50px;
-      right: -300px;
+      right: -500px;
       width: 300px;
       height: 100%;
       background: #fff;
@@ -469,7 +469,7 @@
     function filterResults() {
       svg.call(zoom.transform, d3.zoomIdentity);
       selectedPin = null;
-      sidePanel.style("right", "-300px");
+      sidePanel.style("right", "-500px");
 
       const cuisine = document.getElementById("cuisine").value;
       const rating = document.getElementById("rating").value;
@@ -530,6 +530,7 @@
             .attr("d", createPinPath(800));
         }
         tooltip.style("display", "block")
+        tooltip.style("z-index", "100000")
           .html(`
             <strong>${d.name}</strong><br>
             ${d.rating} Stars (${d.review_count} Reviews)<br>
@@ -582,7 +583,7 @@
       groups.on("click", function(event, d) {
         if (selectedPin === d.name) {
           revertSelectedPin();
-          sidePanel.style("right", "-300px");
+          sidePanel.style("right", "-500px");
           selectedPin = null;
           return;
         }
@@ -622,7 +623,7 @@
     function closeSidePanel() {
       revertSelectedPin();
       selectedPin = null;
-      sidePanel.style("right", "-300px");
+      sidePanel.style("right", "-500px");
     }
   </script>
 </body>
